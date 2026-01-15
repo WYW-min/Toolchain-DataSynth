@@ -1,0 +1,26 @@
+[runtime]
+# 输入 PDF 目录（W1 使用 mock 解析，不会读取真实内容）
+input_dir = "/Data_two/wyw/data/TC-DATASYNTH/原始PDF"
+# 运行产物目录
+output_dir = "./data/out"
+# 运行模式（mock/real 等）
+mode = "mock"
+# mock 模式下，每个文档生成的 QA 数量
+mock_questions_per_doc = 3
+# 可选：限制处理的文档数量（None 表示处理全部）
+max_docs = 5
+# 解析批处理数量（1=流式，0=全量）
+parse_batch_size = 1
+# 生成批处理数量（1=流式，0=全量）
+generate_batch_size = 1
+seed = 7
+log_level = "INFO"
+temp_root_base = "data/temp"
+
+[spec]
+# 难度比例分布
+difficulty_profile = { easy = 0.3, medium = 0.5, hard = 0.2 }
+# 题型比例分布
+question_type_mix = { definition = 0.4, factual = 0.3, reasoning = 0.3 }
+# 最小参照段落长度
+min_evidence_len = 80
