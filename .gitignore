@@ -3,9 +3,9 @@
 !.pixi/config.toml
 
 
-drafts/
+drafts/*
 !drafts/.gitkeep
-logs/
+logs/*
 !logs/.gitkeep
-data/
+data/*
 !data/.gitkeep
