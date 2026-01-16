@@ -11,6 +11,8 @@ requires = ["hatchling"]
 
 [tool.pixi.tasks]
 clear-all = "bash ./scripts/clear-all.sh"
+
+
 test-smoke = "python -m unittest -v tests.test_smoke_mock"
 
 main = "python -m tc_datasynth.main"

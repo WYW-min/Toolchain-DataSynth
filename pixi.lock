@@ -942,7 +942,7 @@ packages:
 - pypi: ./
   name: tc-datasynth
   version: 0.1.0
-  sha256: 154a0a22ed4c68b18b72de0a744101ca8ae4d4a8d77db892d40d66c7191f6594
+  sha256: 713f3ffb53f56536d53091cbda59c26cd72366b9acac30fc72984448ca10d8db
   requires_dist:
   - loguru>=0.7.3,<0.8
   - pydantic>=2.12.5,<3
