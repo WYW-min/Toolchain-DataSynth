@@ -1,29 +1,35 @@
-# TC-DataSynth (W1 骨架)
+# TC-DataSynth仓库架构介绍 (W1 骨架)
 
 面向 300 篇 PDF 的 QA 合成工具链。当前完成 W1 骨架：CLI 可跑通 mock 流程，产出符合 Schema 的 JSONL（不调用大模型）。
+开发规范见 [CONTRIBUTING.md](docs/CONTRIBUTING.md)。
 
 ## 快速开始
-- 确保 `pixi` 已安装，仓库根目录执行：`pixi run main -- --help`
-- 使用默认配置（读取 `/Data_two/wyw/data/TC-DATASYNTH/原始PDF`，输出到 `outputs`）：  
-  `pixi run main`
-- 显式使用 local 子命令：  
-  `pixi run main -- local`
-- 覆盖输入/输出或处理数量：  
-  `pixi run main -- --input-dir /path/to/pdfs --output-dir outputs --max-docs 10`
-- 启动 API 服务（W1 占位）：  
-  `pixi run main -- server --host 0.0.0.0 --port 8000`
-- 调整解析/生成批处理（1=流式，none/0=全量）：  
-  `pixi run main -- --parse-batch-size 5 --generate-batch-size 10`
-- 也可通过 TOML 加载参数：`pixi run main -- --config configs/mock.toml`
-- 强制 mock 模式：`pixi run main -- --mock` 或 `pixi run main -- -m`
-- 若沙箱限制导致 pixi 缓存无法写入，可直接运行：`PYTHONPATH=src python -m tc_datasynth.main --max-docs 2`
+- 确保 `pixi` 已安装（[安装指南](https://pixi.sh/latest/#installation)），仓库根目录执行：`pixi run main -- --help`
+- 推荐方式：  
+  - local：`pixi run local`  
+  - server（W1 占位）：`pixi run server`
+- 冒烟测试：`pixi run test-smoke`
+- 删除所有产物：`pixi run clean-all`
+- 统一入口方式（`main` 会转发到 local/server）：  
+  - 默认 local：`pixi run main`  
+  - 显式 local：`pixi run main local`  
+  - 显式 server：`pixi run main server`
+  
+- 覆盖输入/输出或处理数量：`pixi run local --input-dir /path/to/pdfs --output-dir outputs --max-docs 10`  
+- 启动 API 服务（W1 占位）：`pixi run server --host 0.0.0.0 --port 8000`  
+- 调整解析/生成批处理（1=流式，none/0=全量）： `pixi run local --parse-batch-size 5 --generate-batch-size 10`  
+- 也可通过 TOML 加载参数：  `pixi run local --config configs/mock.toml`  
+- 强制 mock 模式：  `pixi run local --mock` 或 `pixi run local -m`  
+- 若沙箱限制导致 pixi 缓存无法写入，可直接运行：
+  - linux/mac: `PYTHONPATH=src python -m tc_datasynth.main --max-docs 2`
+  - windows: `set PYTHONPATH=src && python -m tc_datasynth.main --max-docs 2`
 
 ## 产物
 - `outputs/<run_id>/FinalQA.jsonl`：通过门禁的 QA 对（mock 数据）。
 - `outputs/<run_id>/FailedCases.jsonl`：未通过门禁的记录（W1 默认为空）。
 - `outputs/<run_id>/report.json`：本次运行的简单统计。
 
-## 代码结构（组件化）
+## 代码结构
 - `src/tc_datasynth/main.py`：入口脚本，分发到不同启动方式。
 - `src/tc_datasynth/arg_parser.py`：主入口解析与子命令占位。
 - `src/tc_datasynth/access/`：入口层（CLI / API）  
@@ -34,7 +40,7 @@
 - `src/tc_datasynth/io/`：输入/输出  
   - `reader.py`：输入发现（Simple 前缀实现）  
   - `writer.py`：产物落盘（Simple 前缀实现）
-- `src/tc_datasynth/pipeline/`：可插拔的流水线组件  
+- `src/tc_datasynth/pipeline/`：可插拔的流水线组件，**组件扩展点**
   - `adapters/`：适配器基类 + `implements/`（PDF mock、Word mock）  
   - `parser/`：`base.py` + `implements/`（Simple 解析器）  
   - `sampler/`：`base.py` + `implements/`（Simple 采样器）  
