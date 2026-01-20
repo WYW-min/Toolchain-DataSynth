@@ -29,7 +29,9 @@ class RunContext(BaseModel):
     spec: SpecConfig = Field(..., description="本次运行的 Spec")
     plan: PlanConfig = Field(..., description="本次运行的 Plan")
     logger: Any = Field(..., description="日志句柄")
-    extras: Dict[str, Any] = Field(default_factory=dict, description="跨组件共享的临时状态")
+    extras: Dict[str, Any] = Field(
+        default_factory=dict, description="跨组件共享的临时状态"
+    )
 
     @classmethod
     def from_config(
@@ -59,7 +61,6 @@ class RunContext(BaseModel):
             plan = MockPlanCompiler().compile(SpecConfig())
 
         latest_link = Path("latest.log")  # 项目根目录软链
-        
 
         if latest_link.exists() or latest_link.is_symlink():
             latest_link.unlink()
@@ -78,8 +79,8 @@ class RunContext(BaseModel):
             plan=plan,
         )
 
-    def workdir_for(self, doc_id: str, subdir: str = "adapter_output") -> Path:
+    def workdir_for(self, subdir: str = "adapter") -> Path:
         """获取（并创建）某文档的工作子目录。"""
-        path = self.temp_root / subdir / doc_id
+        path = self.temp_root / subdir
         path.mkdir(parents=True, exist_ok=True)
         return path

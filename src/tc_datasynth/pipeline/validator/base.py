@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Generic, Iterable, List, Optional, TypeVar
 
 from tc_datasynth.core.models import QAPair, ValidationResult
-from tc_datasynth.pipeline.mixins.batch import LoopBatchMixin
+from tc_datasynth.pipeline.enhance.mixin.batch import LoopBatchMixin
 
 
 @dataclass(slots=True)
@@ -22,7 +22,9 @@ class ValidatorConfigBase:
 TValidatorConfig = TypeVar("TValidatorConfig", bound=ValidatorConfigBase)
 
 
-class QualityGateBase(LoopBatchMixin[QAPair, ValidationResult], ABC, Generic[TValidatorConfig]):
+class QualityGateBase(
+    LoopBatchMixin[QAPair, ValidationResult], ABC, Generic[TValidatorConfig]
+):
     """门禁接口。"""
 
     config: TValidatorConfig

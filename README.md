@@ -1,3 +1,5 @@
+===> 当前的切分策略 tests/fixtures
+
 # TC-DataSynth仓库架构介绍 (W1 骨架)
 
 面向 300 篇 PDF 的 QA 合成工具链。当前完成 W1 骨架：CLI 可跑通 mock 流程，产出符合 Schema 的 JSONL（不调用大模型）。
@@ -41,7 +43,7 @@
   - `reader.py`：输入发现（Simple 前缀实现）  
   - `writer.py`：产物落盘（Simple 前缀实现）
 - `src/tc_datasynth/pipeline/`：可插拔的流水线组件，**组件扩展点**
-  - `adapters/`：适配器基类 + `implements/`（PDF mock、Word mock）  
+  - `adapter/`：适配器基类 + `implements/`（PDF mock、Word mock）  
   - `parser/`：`base.py` + `implements/`（Simple 解析器）  
   - `sampler/`：`base.py` + `implements/`（Simple 采样器）  
   - `generator/`：`base.py` + `implements/`（Mock 生成器）  
@@ -61,7 +63,7 @@
 
 ## 运行上下文与临时目录
 - `RunContext` 统一维护 `run_id`、`temp_root`（默认 `data/temp/<run_id>`）、`RuntimeConfig`、`logger` 等，流水线组件通过依赖注入共享。
-- 适配器输出中间文件到 `temp_root/adapter_output/<doc_id>/`，统一解析器读取中间产物并生成 IR，后续可扩展表格/图片处理。
+- 适配器输出中间文件到 `temp_root/adapter/<doc_id>/`，统一解析器读取中间产物并生成 IR，后续可扩展表格/图片处理。
 
 ## Spec -> Plan（W1 占位）
 - `configs/mock.toml` 中新增 `[spec]`：难度比例、题型比例、最小参照段落长度等。
@@ -76,3 +78,6 @@
 - 接入真实 PDF/Word 解析适配器，补充切分插件与 LLM 生成。
 - 扩充门禁体系（格式、敏感词、启发式），生成质量报告与回流清单。
 - FastAPI 服务化封装与 Docker 交付。
+
+
+

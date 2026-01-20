@@ -8,8 +8,12 @@ from dataclasses import dataclass
 
 from tc_datasynth.core.context import RunContext
 from tc_datasynth.core.models import IntermediateRepresentation, SourceDocument
-from tc_datasynth.pipeline.adapters import AdapterResult
-from tc_datasynth.pipeline.parser.base import AdapterRegistry, ParserBase, ParserConfigBase
+from tc_datasynth.pipeline.adapter import AdapterResult
+from tc_datasynth.pipeline.parser.base import (
+    AdapterRegistry,
+    ParserBase,
+    ParserConfigBase,
+)
 
 
 @dataclass(slots=True)
@@ -35,7 +39,9 @@ class SimpleUnifiedParser(ParserBase[SimpleParserConfig]):
         """返回默认配置。"""
         return SimpleParserConfig()
 
-    def parse(self, document: SourceDocument, ctx: RunContext) -> IntermediateRepresentation:
+    def parse(
+        self, document: SourceDocument, ctx: RunContext
+    ) -> IntermediateRepresentation:
         """解析文档，读取适配器产出的文本文件生成 IR。"""
         adapter = self.registry.resolve(document)
         result: AdapterResult = adapter.parse(document, ctx)

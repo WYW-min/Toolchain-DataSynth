@@ -5,7 +5,7 @@ from __future__ import annotations
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,7 +17,9 @@ class SourceDocument(BaseModel):
 
     doc_id: str = Field(..., description="文档唯一标识，通常取文件名（不含后缀）")
     path: Path = Field(..., description="文档所在路径")
-    metadata: Dict[str, str] = Field(default_factory=dict, description="额外元数据，如来源类型")
+    metadata: Dict[str, str] = Field(
+        default_factory=dict, description="额外元数据，如来源类型"
+    )
 
 
 class IntermediateRepresentation(BaseModel):
@@ -25,8 +27,12 @@ class IntermediateRepresentation(BaseModel):
 
     doc_id: str = Field(..., description="对应的文档 ID")
     text: str = Field(..., description="主体文本")
-    sections: List[str] = Field(default_factory=list, description="可选的章节标题列表")
-    metadata: Dict[str, str] = Field(default_factory=dict, description="解析阶段产出的辅助信息")
+    sections: List[str] | None = Field(
+        default_factory=list, description="可选的章节标题列表"
+    )
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="解析阶段产出的辅助信息"
+    )
 
 
 class DocumentChunk(BaseModel):
@@ -36,7 +42,9 @@ class DocumentChunk(BaseModel):
     content: str = Field(..., description="片段内容")
     source_doc_id: str = Field(..., description="对应原文档 ID")
     section: Optional[str] = Field(default=None, description="片段所属章节")
-    metadata: Dict[str, str] = Field(default_factory=dict, description="切分策略等元信息")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="切分策略等元信息"
+    )
 
 
 class QAPair(BaseModel):
@@ -47,7 +55,9 @@ class QAPair(BaseModel):
     evidence: str = Field(..., description="溯源证据文本")
     source_doc_id: str = Field(..., description="来源文档 ID")
     chunk_id: str = Field(..., description="来源片段 ID")
-    metadata: Dict[str, str] = Field(default_factory=dict, description="生成或校验时的元信息")
+    metadata: Dict[str, str] = Field(
+        default_factory=dict, description="生成或校验时的元信息"
+    )
 
     def to_jsonable(self) -> Dict[str, object]:
         """以 dict 形式返回，便于 JSON/JSONL 落盘。"""

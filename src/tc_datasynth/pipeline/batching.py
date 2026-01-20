@@ -92,7 +92,7 @@ class BatchExecutor:
         chunk_batches: List[List[DocumentChunk]] = []
         for document, ir in parsed_items:
             self.logger.debug(f"采样文档: {document.path}")
-            chunk_batches.append(self.components.sampler.sample(ir))
+            chunk_batches.append(self.components.sampler.sample(ir, self.ctx))
         qa_batches = self.components.generator.generate_batch(chunk_batches, self.ctx)
         if len(qa_batches) != len(parsed_items):
             self.logger.warning(

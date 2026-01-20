@@ -10,8 +10,8 @@ from typing import Dict, Generic, Iterable, List, Optional, TypeVar
 
 from tc_datasynth.core.context import RunContext
 from tc_datasynth.core.models import IntermediateRepresentation, SourceDocument
-from tc_datasynth.pipeline.adapters import DocumentAdapter
-from tc_datasynth.pipeline.mixins.batch import LoopBatchMixin
+from tc_datasynth.pipeline.adapter import DocumentAdapter
+from tc_datasynth.pipeline.enhance.mixin.batch import LoopBatchMixin
 
 
 class AdapterRegistry:
@@ -42,7 +42,11 @@ class ParserConfigBase:
 TParserConfig = TypeVar("TParserConfig", bound=ParserConfigBase)
 
 
-class ParserBase(LoopBatchMixin[SourceDocument, IntermediateRepresentation], ABC, Generic[TParserConfig]):
+class ParserBase(
+    LoopBatchMixin[SourceDocument, IntermediateRepresentation],
+    ABC,
+    Generic[TParserConfig],
+):
     """统一解析器接口。"""
 
     config: TParserConfig
@@ -58,7 +62,9 @@ class ParserBase(LoopBatchMixin[SourceDocument, IntermediateRepresentation], ABC
         raise NotImplementedError
 
     @abstractmethod
-    def parse(self, document: SourceDocument, ctx: RunContext) -> IntermediateRepresentation:
+    def parse(
+        self, document: SourceDocument, ctx: RunContext
+    ) -> IntermediateRepresentation:
         """解析文档，输出 IR。"""
         raise NotImplementedError
 

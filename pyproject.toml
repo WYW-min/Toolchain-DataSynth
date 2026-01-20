@@ -1,6 +1,6 @@
 [project]
 authors = [{name = "王逸伟1", email = "1206182848@qq.com"}]
-dependencies = ["loguru>=0.7.3,<0.8", "pydantic>=2.12.5,<3", "tqdm>=4.67.1,<5"]
+dependencies = ["loguru>=0.7.3,<0.8", "pydantic>=2.11,<3", "tqdm>=4.67.1,<5", "markitdown[pdf,docx,pptx]>=0.1.4,<0.2"]
 name = "TC-DataSynth"
 requires-python = ">= 3.11"
 version = "0.1.0"
@@ -12,7 +12,7 @@ requires = ["hatchling"]
 [tool.pixi.tasks]
 clear-all = "bash ./scripts/clear-all.sh"
 
-
+test = "python -m unittest"
 test-smoke = "python -m unittest -v tests.test_smoke_mock"
 
 main = "python -m tc_datasynth.main"
@@ -46,4 +46,9 @@ tc_datasynth = { path = ".", editable = true }
 python = "3.13.*"
 tqdm = ">=4.67.1,<5"
 loguru = ">=0.7.3,<0.8"
-pydantic = ">=2.12.5,<3"
+pydantic = "2.11.*"
+langchain = ">=1.2.6,<2"
+langchain-openai = ">=1.1.7,<2"
+
+[dependency-groups]
+notebook = ["pymupdf>=1.26.7,<2", "pymupdf4llm>=0.2.9,<0.3"]

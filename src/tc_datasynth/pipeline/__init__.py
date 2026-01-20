@@ -1,6 +1,6 @@
 """流水线核心组件与适配器的聚合入口。"""
 
-from tc_datasynth.pipeline.adapters import (
+from tc_datasynth.pipeline.adapter import (
     AdapterConfigBase,
     AdapterResult,
     DocumentAdapter,
@@ -22,12 +22,7 @@ from tc_datasynth.pipeline.parser import (
     SimpleUnifiedParser,
 )
 from tc_datasynth.pipeline.runner import PipelineRunner
-from tc_datasynth.pipeline.sampler import (
-    SamplerBase,
-    SamplerConfigBase,
-    SamplingConfig,
-    SimpleChunkSampler,
-)
+from tc_datasynth.pipeline.sampler import SamplerBase, SamplerConfigBase
 from tc_datasynth.pipeline.validator import (
     QualityGateBase,
     SimpleCompositeConfig,

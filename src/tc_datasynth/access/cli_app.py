@@ -89,6 +89,18 @@ class CLIApp:
         parser.add_argument(
             "--mock", "-m", action="store_true", help="强制启用 mock 模式"
         )
+        parser.add_argument(
+            "--llm-config",
+            type=Path,
+            default=None,
+            help="LLM 配置文件路径（可覆盖配置）",
+        )
+        parser.add_argument(
+            "--llm-model",
+            type=str,
+            default=None,
+            help="LLM 模型名（可覆盖配置）",
+        )
         return parser
 
     @staticmethod
@@ -129,6 +141,10 @@ class CLIApp:
             )
         if args.mock:
             config.mode = "mock"
+        if args.llm_config:
+            config.llm_config_path = args.llm_config
+        if args.llm_model:
+            config.llm_model = args.llm_model
         config.ensure_output_dir()
         return config
 
