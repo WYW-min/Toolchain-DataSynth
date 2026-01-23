@@ -1,8 +1,40 @@
 [settings]
 timeout = 360  # 6 分钟
+# ====== 固定错误模型测试 ======
+[models.name-error]
+model = "doubao-se"
+model_provider = "openai"
+temperature = 0
+base_url_env = "DOUBAO_BASEURL"
+api_key_env = "DOUBAO_APIKEY_FS_AGENT"
+max_completion_tokens = 64000
+reasoning_effort = "medium"
+
+
+
+[models.apikey-error]
+model = "doubao-seed-1-6-251015"
+model_provider = "openai"
+temperature = 0
+base_url_env = "DOUBAO_BASEURL"
+api_key_env = "QWEN_APIKEY_FS"
+max_completion_tokens = 64000
+reasoning_effort = "medium"
+
+
+
+[models.baseurl-error]
+model = "doubao-seed-1-6-251015"
+model_provider = "openai"
+temperature = 0
+base_url_env = "QWEN_BASEURL"
+api_key_env = "DOUBAO_APIKEY_FS_AGENT"
+max_completion_tokens = 64000
+reasoning_effort = "medium"
+
 
 # ============ 豆包系列 ============
-[models.doubao_seed_medium]
+[models.doubao-seed-medium]
 model = "doubao-seed-1-6-251015"
 model_provider = "openai"
 temperature = 0
@@ -10,10 +42,10 @@ base_url_env = "DOUBAO_BASEURL"
 api_key_env = "DOUBAO_APIKEY_FS_AGENT"
 max_completion_tokens = 64000
 reasoning_effort = "medium"
-[models.doubao_seed_medium.extra_body]
+[models.doubao-seed-medium.extra_body]  # 修正：使用连字符
 thinking = { type = "enabled" }
 
-[models.doubao_seed_low]
+[models.doubao-seed-low]
 model = "doubao-seed-1-6-251015"
 model_provider = "openai"
 temperature = 0
@@ -21,10 +53,10 @@ base_url_env = "DOUBAO_BASEURL"
 api_key_env = "DOUBAO_APIKEY_FS_AGENT"
 max_completion_tokens = 64000
 reasoning_effort = "low"
-[models.doubao_seed_low.extra_body]
+[models.doubao-seed-low.extra_body]  # 修正：使用连字符
 thinking = { type = "enabled" }
 
-[models.doubao_flash]
+[models.doubao-flash]
 model = "doubao-seed-1-6-flash"
 model_provider = "openai"
 temperature = 0
@@ -32,7 +64,7 @@ base_url_env = "DOUBAO_BASEURL"
 api_key_env = "DOUBAO_APIKEY_FS_AGENT"
 max_completion_tokens = 64000
 
-[models.doubao_lite_medium]
+[models.doubao-lite-medium]
 model = "doubao-seed-1-6-lite-251015"
 model_provider = "openai"
 temperature = 0
@@ -41,7 +73,7 @@ api_key_env = "DOUBAO_APIKEY_FS_AGENT"
 max_completion_tokens = 64000
 reasoning_effort = "medium"
 
-[models.doubao_lite_low]
+[models.doubao-lite-low]
 model = "doubao-seed-1-6-lite-251015"
 model_provider = "openai"
 temperature = 0
@@ -51,7 +83,7 @@ max_completion_tokens = 64000
 reasoning_effort = "low"
 
 # ============ GPT 系列 ============
-[models.gpt_medium]
+[models.gpt-medium]
 model = "gpt-5"
 model_provider = "openai"
 temperature = 0
@@ -59,7 +91,7 @@ base_url_env = "BASEURL_FS"
 api_key_env = "OPENAI_APIKEY_FS"
 reasoning_effort = "medium"
 
-[models.gpt_low]
+[models.gpt-low]
 model = "gpt-5"
 model_provider = "openai"
 temperature = 0
@@ -68,34 +100,32 @@ api_key_env = "OPENAI_APIKEY_FS"
 reasoning_effort = "low"
 
 # ============ 通义千问系列 ============
-[models.qwen_max]
+[models.qwen-max]
 model = "qwen3-max-preview"
 model_provider = "openai"
 temperature = 0
 base_url_env = "QWEN_BASEURL"
 api_key_env = "QWEN_APIKEY_FS"
 stream = true
-[models.qwen_max.extra_body]
+[models.qwen-max.extra_body]  # 修正：使用连字符
 enable_thinking = true
 
-[models.qwen_plus]
+[models.qwen-plus]
 model = "qwen-plus"
 model_provider = "openai"
 temperature = 0
 base_url_env = "QWEN_BASEURL"
 api_key_env = "QWEN_APIKEY_FS"
 stream = true
-[models.qwen_plus.extra_body]
+[models.qwen-plus.extra_body]  # 修正：使用连字符
 enable_thinking = true
 
-[models.qwen_flash]
+[models.qwen-flash]
 model = "qwen-flash"
 model_provider = "openai"
 temperature = 0
 base_url_env = "QWEN_BASEURL"
 api_key_env = "QWEN_APIKEY_FS"
 stream = true
-[models.qwen_flash.extra_body]
+[models.qwen-flash.extra_body]  # 修正：使用连字符
 enable_thinking = true
-[models.qwen_flash.extra_headers]
-X-DashScope-DataInspection = '{"input":"disable","output":"disable"}'

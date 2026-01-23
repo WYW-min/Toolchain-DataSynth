@@ -1,6 +1,6 @@
 [project]
 authors = [{name = "王逸伟1", email = "1206182848@qq.com"}]
-dependencies = ["loguru>=0.7.3,<0.8", "pydantic>=2.11,<3", "tqdm>=4.67.1,<5", "markitdown[pdf,docx,pptx]>=0.1.4,<0.2"]
+dependencies = ["loguru>=0.7.3,<0.8", "pydantic>=2.11,<3", "tqdm>=4.67.1,<5", "markitdown[pdf,docx,pptx]>=0.1.4,<0.2", "json-repair>=0.55.0,<0.56"]
 name = "TC-DataSynth"
 requires-python = ">= 3.11"
 version = "0.1.0"
