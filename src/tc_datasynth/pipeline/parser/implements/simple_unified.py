@@ -8,12 +8,12 @@ from dataclasses import dataclass
 
 from tc_datasynth.core.context import RunContext
 from tc_datasynth.core.models import IntermediateRepresentation, SourceDocument
-from tc_datasynth.pipeline.adapter import AdapterResult
 from tc_datasynth.pipeline.parser.base import (
     AdapterRegistry,
     ParserBase,
     ParserConfigBase,
 )
+from tc_datasynth.pipeline.parser.implements.unified_support import parse_document_to_ir
 
 
 @dataclass(slots=True)
@@ -25,6 +25,8 @@ class SimpleParserConfig(ParserConfigBase):
 
 class SimpleUnifiedParser(ParserBase[SimpleParserConfig]):
     """最小统一解析器实现。"""
+
+    component_name = "simple_unified"
 
     def __init__(
         self,
@@ -43,17 +45,9 @@ class SimpleUnifiedParser(ParserBase[SimpleParserConfig]):
         self, document: SourceDocument, ctx: RunContext
     ) -> IntermediateRepresentation:
         """解析文档，读取适配器产出的文本文件生成 IR。"""
-        adapter = self.registry.resolve(document)
-        result: AdapterResult = adapter.parse(document, ctx)
-        text = result.text_path.read_text(encoding=self.config.encoding)
-        return IntermediateRepresentation(
-            doc_id=result.doc_id,
-            text=text,
-            sections=[result.doc_id],
-            metadata={
-                "adapter": result.adapter_name,
-                "text_path": str(result.text_path),
-                "workdir": str(result.workdir),
-                **result.metadata,
-            },
+        return parse_document_to_ir(
+            self.registry,
+            document,
+            ctx,
+            encoding=self.config.encoding,
         )

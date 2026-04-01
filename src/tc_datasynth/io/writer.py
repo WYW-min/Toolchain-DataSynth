@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Generic, Iterable, List, Optional, Tuple, TypeVar
 
 from tc_datasynth.core.models import QAPair
+from tc_datasynth.core.registrable import RegistrableComponent
 
 
 @dataclass(slots=True)
@@ -23,7 +24,7 @@ class WriterConfigBase:
 TWriterConfig = TypeVar("TWriterConfig", bound=WriterConfigBase)
 
 
-class WriterBase(ABC, Generic[TWriterConfig]):
+class WriterBase(RegistrableComponent, ABC, Generic[TWriterConfig]):
     """写入器接口。"""
 
     config: TWriterConfig
@@ -58,6 +59,8 @@ class SimpleWriterConfig(WriterConfigBase):
 class SimpleQAWriter(WriterBase[SimpleWriterConfig]):
     """负责将产物输出到指定目录。"""
 
+    component_name = "simple"
+
     def __init__(self, output_dir: Optional[Path] = None, config: Optional[SimpleWriterConfig] = None) -> None:
         """初始化写入器，设置基础输出目录。"""
         if output_dir is None and config is None:
@@ -84,7 +87,13 @@ class SimpleQAWriter(WriterBase[SimpleWriterConfig]):
 
         with final_path.open("w", encoding="utf-8") as final_out:
             for record in final_records:
-                final_out.write(json.dumps(record.to_jsonable(), ensure_ascii=False) + "\n")
+                final_out.write(
+                    json.dumps(
+                        record.model_dump(mode="json", exclude_none=True),
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
 
         with failed_path.open("w", encoding="utf-8") as failed_out:
             for record in failed_records:

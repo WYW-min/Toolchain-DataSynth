@@ -1,5 +1,6 @@
 [settings]
 timeout = 360  # 6 分钟
+env_path = "configs/llm_manager.env"  # 优先按项目根目录解析；仓库内仅提供 llm_manager.env.example
 # ====== 固定错误模型测试 ======
 [models.name-error]
 model = "doubao-se"
@@ -75,12 +76,14 @@ reasoning_effort = "medium"
 
 [models.doubao-lite-low]
 model = "doubao-seed-1-6-lite-251015"
+reasoning_effort = "low"
+base_url_env = "DOUBAO_BASEURL"
 model_provider = "openai"
 temperature = 0
-base_url_env = "DOUBAO_BASEURL"
+
 api_key_env = "DOUBAO_APIKEY_FS_AGENT"
 max_completion_tokens = 64000
-reasoning_effort = "low"
+
 
 # ============ GPT 系列 ============
 [models.gpt-medium]

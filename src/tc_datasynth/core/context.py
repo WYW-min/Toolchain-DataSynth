@@ -46,7 +46,7 @@ class RunContext(BaseModel):
         temp_root = Path(config.temp_root_base) / rid
         temp_root.mkdir(parents=True, exist_ok=True)
 
-        logs_root = Path("logs")
+        logs_root = Path(config.logs_root_base)
         logs_root.mkdir(parents=True, exist_ok=True)
         log_file_path = logs_root / f"{rid}.log"
 

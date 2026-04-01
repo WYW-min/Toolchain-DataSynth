@@ -3,10 +3,23 @@
 """
 
 from tc_datasynth.pipeline.validator.implements.simple_schema import (
-    SimpleCompositeConfig,
-    SimpleCompositeGate,
-    SimpleSchemaGate,
     SimpleValidatorConfig,
+    SimpleSchemaValidator,
+)
+from tc_datasynth.pipeline.validator.implements.evidence_validator import (
+    EvidenceValidator,
+    EvidenceValidatorConfig,
+)
+from tc_datasynth.pipeline.validator.implements.label_validator import (
+    LabelValidator,
+    LabelValidatorConfig,
 )
 
-__all__ = ["SimpleValidatorConfig", "SimpleSchemaGate", "SimpleCompositeConfig", "SimpleCompositeGate"]
+__all__ = [
+    "SimpleValidatorConfig",
+    "SimpleSchemaValidator",
+    "EvidenceValidatorConfig",
+    "EvidenceValidator",
+    "LabelValidatorConfig",
+    "LabelValidator",
+]

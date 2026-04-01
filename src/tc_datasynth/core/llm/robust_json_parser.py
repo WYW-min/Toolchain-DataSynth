@@ -111,7 +111,7 @@ class RobustJSONParser(BaseOutputParser[ParseResult[T]], Generic[T]):
         使用示例:
             for result in parser.parse_stream(stream):
                 if result.parse:
-                    print(f"解析成功: {result.parse}")
+                    handle_result(result.parse)
         """
         accumulated_text = ""
         last_successful_parse = None
@@ -167,7 +167,7 @@ class RobustJSONParser(BaseOutputParser[ParseResult[T]], Generic[T]):
         使用示例:
             async for result in parser.aparse_stream(stream):
                 if result.parse:
-                    print(f"解析成功: {result.parse}")
+                    await handle_result(result.parse)
         """
         accumulated_text = ""
         last_successful_parse = None

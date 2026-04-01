@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Generic, Iterable, List, Optional, TypeVar
 
 from tc_datasynth.core.models import SourceDocument
+from tc_datasynth.core.registrable import RegistrableComponent
 
 
 @dataclass(slots=True)
@@ -23,7 +24,7 @@ class ReaderConfigBase:
 TReaderConfig = TypeVar("TReaderConfig", bound=ReaderConfigBase)
 
 
-class ReaderBase(ABC, Generic[TReaderConfig]):
+class ReaderBase(RegistrableComponent, ABC, Generic[TReaderConfig]):
     """输入读取器接口。"""
 
     config: TReaderConfig
@@ -52,6 +53,8 @@ class SimpleReaderConfig(ReaderConfigBase):
 
 class SimpleDocumentReader(ReaderBase[SimpleReaderConfig]):
     """最小实现：按后缀从目录发现文档。"""
+
+    component_name = "simple"
 
     def __init__(
         self,

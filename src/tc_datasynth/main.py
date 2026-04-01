@@ -1,11 +1,14 @@
 """
-统一入口：子命令分发到 CLI 或 API。
+统一入口：子命令分发到 CLI / API / 组件目录。
 """
 
 import sys
+from typing import Sequence
 
+from tc_datasynth.access.components_app import ComponentsApp
 from tc_datasynth.access.cli_app import CLIApp
 from tc_datasynth.access.api_app import APIApp
+from tc_datasynth.access.preflight_app import PreflightApp
 from tc_datasynth.arg_parser import get_parsers
 from tc_datasynth.utilities.dict_dataclass import ddataclass
 
@@ -14,15 +17,22 @@ from tc_datasynth.utilities.dict_dataclass import ddataclass
 class Apps:
     local: type[CLIApp]
     server: type[APIApp]
+    components: type[ComponentsApp]
+    preflight: type[PreflightApp]
 
 
 APP_NAME = "tc-datasynth"
-APP_CLASSES = Apps(local=CLIApp, server=APIApp)
+APP_CLASSES = Apps(
+    local=CLIApp,
+    server=APIApp,
+    components=ComponentsApp,
+    preflight=PreflightApp,
+)
 
 
-def main():
+def main(argv: Sequence[str] | None = None):
     parsers = get_parsers()
-    args, remaining = parsers.main.parse_known_args()
+    args, remaining = parsers.main.parse_known_args(argv)
     if args.root_help and args.command is None:
         parsers.main.print_help()
         for name, app_cls in APP_CLASSES.items():

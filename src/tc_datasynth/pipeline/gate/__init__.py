@@ -1,3 +1,16 @@
 """
-门禁规则占位：未来可拆分不同类型的校验器到此目录。
+门控模块对外导出。
 """
+
+from tc_datasynth.pipeline.gate.base import GateConfigBase, QualityGateBase
+from tc_datasynth.pipeline.gate.implements.simple_composite import (
+    SimpleCompositeGate,
+    SimpleCompositeGateConfig,
+)
+
+__all__ = [
+    "GateConfigBase",
+    "QualityGateBase",
+    "SimpleCompositeGateConfig",
+    "SimpleCompositeGate",
+]

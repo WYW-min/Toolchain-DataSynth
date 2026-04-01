@@ -1,17 +1,30 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import os
 import tomllib
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 from collections.abc import MutableMapping
 
+from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from loguru import logger
 from langchain_core.language_models import BaseChatModel
 from tqdm import tqdm
 
 from tc_datasynth.utilities.tiny_tool import format_dict
+
+
+@dataclass(slots=True)
+class ModelCheckResult:
+    """单模型校验结果。"""
+
+    model_name: str
+    ok: bool
+    stage: str
+    message: str
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 class LlmFactory(MutableMapping[str, BaseChatModel]):
@@ -30,6 +43,8 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
         config_path: Path | str | None = None,
         *,
         check_all: bool = False,
+        env_path: Path | str | None = None,
+        dotenv_override: bool = True,
     ) -> None:
         """
         初始化 LLM 工厂。
@@ -48,16 +63,18 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
         self._failed_configs: Dict[str, str] = {}  # 记录加载失败的模型
         self._timeout: int = 360
         self._config_path: Optional[Path] = None
+        self._env_path: Optional[Path] = None
         self._check_all = check_all
+        self._preload_all = False
+        self._dotenv_override = dotenv_override
 
         # 加载配置
         if config_path is None:
             config_path = Path(__file__).resolve().parents[4] / "configs" / "llm.toml"
         self._config_path = Path(config_path)
+        self._env_path = self._resolve_env_path(env_path, config_path=self._config_path)
+        self._load_env_file(self._env_path, override=dotenv_override)
         self._load_config(self._config_path)
-
-        # 预加载所有模型
-        self._preload_models()
 
         # 校验所有模型，若存在无效配置则给出提示
         if self._check_all:
@@ -69,19 +86,60 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
             "detail": {"OK": [], "ERROR": {}},
         }
         pbar = tqdm(total=len(self), desc="检查模型连通性", unit="模型")
-        for model_name, model in self.items():
-            try:
-                list(
-                    model.stream("这是一个连通测试消息，若能收到请快速回复1表示成功！")
-                )
+        for model_name in self.keys():
+            result = self.check_only(model_name)
+            if result.ok:
                 logs["summary"]["OK"] += 1
                 logs["detail"]["OK"].append(model_name)
-            except Exception as e:
+            else:
                 logs["summary"]["ERROR"] += 1
-                logs["detail"]["ERROR"][model_name] = f"error: {e}"
+                logs["detail"]["ERROR"][model_name] = (
+                    f"{result.stage}: {result.message}"
+                )
             pbar.update(1)
         pbar.close()
         logger.info("【模型连通性检查结果】：\n" + format_dict(logs, mode="yaml"))
+
+    def check_only(self, model_name: str) -> ModelCheckResult:
+        """仅检查单个模型，避免全量初始化与全量连通测试。"""
+        normalized_name = model_name.replace("_", "-")
+        if normalized_name not in self._configs:
+            available = ", ".join(sorted(self._configs.keys()))
+            return ModelCheckResult(
+                model_name=normalized_name,
+                ok=False,
+                stage="config",
+                message=f"模型未在配置中定义: {normalized_name}",
+                details={"available_models": available},
+            )
+
+        try:
+            model = self[normalized_name]
+        except Exception as exc:
+            return ModelCheckResult(
+                model_name=normalized_name,
+                ok=False,
+                stage="load",
+                message=str(exc),
+            )
+
+        try:
+            list(model.stream("这是一个连通测试消息，若能收到请快速回复1表示成功！"))
+        except Exception as exc:
+            return ModelCheckResult(
+                model_name=normalized_name,
+                ok=False,
+                stage="ping",
+                message=str(exc),
+            )
+
+        return ModelCheckResult(
+            model_name=normalized_name,
+            ok=True,
+            stage="ping",
+            message="模型连通性检查通过",
+            details={"loaded": self.is_loaded(normalized_name)},
+        )
 
     def _load_config(self, config_path: Path) -> None:
         """从 TOML 文件加载配置。"""
@@ -125,6 +183,53 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
                 logger.error(f"加载模型 '{name}' 配置失败: {error_msg}")
                 raise
 
+    @staticmethod
+    def _resolve_env_path(
+        env_path: Path | str | None, *, config_path: Path
+    ) -> Path:
+        """解析 env 文件路径，优先级：参数 > llm.toml settings.env_path > 默认值。"""
+        if env_path is not None:
+            return Path(env_path)
+
+        settings = LlmFactory._read_settings(config_path)
+        configured = settings.get("env_path")
+        if isinstance(configured, str) and configured.strip():
+            configured_path = Path(configured.strip())
+            if not configured_path.is_absolute():
+                # 优先支持“相对于项目根目录”的写法，兼容旧的“相对于 llm.toml”写法。
+                project_relative = LlmFactory._project_root() / configured_path
+                config_relative = config_path.parent / configured_path
+                if project_relative.exists():
+                    configured_path = project_relative
+                else:
+                    configured_path = config_relative
+            return configured_path
+
+        return LlmFactory._project_root() / "configs" / "llm_manager.env"
+
+    @staticmethod
+    def _project_root() -> Path:
+        return Path(__file__).resolve().parents[4]
+
+    @staticmethod
+    def _read_settings(config_path: Path) -> Dict[str, Any]:
+        """仅读取配置中的 settings 块。"""
+        if not config_path.exists():
+            return {}
+        try:
+            with config_path.open("rb") as f:
+                raw = tomllib.load(f)
+        except tomllib.TOMLDecodeError:
+            return {}
+        return raw.get("settings", {})
+
+    @staticmethod
+    def _load_env_file(env_path: Path, override: bool = False) -> None:
+        """加载 env 文件（若不存在则静默跳过）。"""
+        if not env_path.exists():
+            return
+        load_dotenv(dotenv_path=env_path, override=override)
+
     def _resolve_config(self, model_name: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
         """递归解析配置，将环境变量引用替换为实际值。"""
         resolved: Dict[str, Any] = {}
@@ -152,29 +257,6 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
             resolved["timeout"] = self._timeout
 
         return resolved
-
-    def _preload_models(self) -> None:
-        """预加载所有模型实例。"""
-        logger.info(f"开始预加载 {len(self._configs)} 个模型...")
-        logs = {
-            "summary": {"total": len(self._configs), "OK": 0, "ERROR": 0},
-            "detail": {"OK": [], "ERROR": {}},
-        }
-
-        for model_name in list(self._configs.keys()):
-            try:
-                # 触发模型初始化
-                _ = self[model_name]
-                logs["summary"]["OK"] += 1
-                logs["detail"]["OK"].append(model_name)
-            except Exception as e:
-                logs["summary"]["ERROR"] += 1
-                logs["detail"]["ERROR"][model_name] = str(e)
-                # 从配置中移除失败的模型
-                self._configs.pop(model_name, None)
-                self._failed_configs[model_name] = str(e)
-
-        logger.info(f"【模型预加载结果】： \n" + format_dict(logs, mode="yaml"))
 
     # ==================== MutableMapping 必需接口 ====================
 
@@ -277,16 +359,11 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
 
     def values(self) -> List[BaseChatModel]:
         """返回所有已加载的模型实例列表。"""
-        if self._preload_all:
-            # 预加载模式：直接返回已加载的模型
-            return [self._models[name] for name in self._configs.keys()]
-        else:
-            # 懒加载模式：触发加载
-            return [self[name] for name in self._configs.keys()]
+        return [self[name] for name in self._configs.keys()]
 
     def items(self) -> List[tuple[str, BaseChatModel]]:
         """返回所有模型名称和实例的元组列表。"""
-        return [(name, self._models[name]) for name in self._configs.keys()]
+        return [(name, self[name]) for name in self._configs.keys()]
 
     def get_config(self, model_name: str) -> Dict[str, Any]:
         """获取模型的解析后配置。"""
@@ -318,7 +395,13 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
         self._models.clear()
         logger.info(f"已清空 {count} 个已加载的模型实例")
 
-    def reload(self, config_path: Path | str | None = None) -> None:
+    def reload(
+        self,
+        config_path: Path | str | None = None,
+        env_path: Path | str | None = None,
+        *,
+        dotenv_override: bool | None = None,
+    ) -> None:
         """重新加载配置（清空缓存的模型实例）。"""
         self._models.clear()
         self._configs.clear()
@@ -326,11 +409,15 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
 
         if config_path:
             self._config_path = Path(config_path)
+        self._env_path = self._resolve_env_path(env_path, config_path=self._config_path)
+        self._load_env_file(
+            self._env_path,
+            override=(
+                self._dotenv_override if dotenv_override is None else dotenv_override
+            ),
+        )
 
         self._load_config(self._config_path)
-
-        if self._preload_all:
-            self._preload_models()
 
         logger.info(f"配置已重新加载: {self._config_path}")
 
@@ -366,24 +453,38 @@ class LlmFactory(MutableMapping[str, BaseChatModel]):
 
 
 # 模块级单例
-_factory: Optional[LlmFactory] = None
+llm_manager: Optional[LlmFactory] = None
 
 
-def get_llm_factory(
+def get_llm_manager(
     config_path: Path | str | None = None,
+    env_path: Path | str | None = None,
     *,
     skip_invalid: bool = True,
     preload_all: bool = True,
+    dotenv_override: bool = True,
 ) -> LlmFactory:
     """
     获取 LLM 工厂单例。
 
     参数:
         config_path: 配置文件路径
+        env_path: 环境变量文件路径（默认 configs/llm_manager.env）
         skip_invalid: 是否跳过无效配置
         preload_all: 是否预加载所有模型
+        dotenv_override: 是否让 .env 覆盖进程已有环境变量（默认 True）
     """
-    global _factory
-    if _factory is None:
-        _factory = LlmFactory(config_path)
-    return _factory
+    global llm_manager
+    if llm_manager is None:
+        llm_manager = LlmFactory(
+            config_path,
+            env_path=env_path,
+            dotenv_override=dotenv_override,
+        )
+    elif config_path is not None or env_path is not None:
+        llm_manager.reload(
+            config_path=config_path,
+            env_path=env_path,
+            dotenv_override=dotenv_override,
+        )
+    return llm_manager

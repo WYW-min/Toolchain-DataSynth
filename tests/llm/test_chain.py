@@ -11,9 +11,9 @@ from langchain_core.runnables import RunnableLambda
 from pydantic import BaseModel, Field
 from pprint import pprint
 
-from tc_datasynth.core.llm.prompt_factory import get_prompt_factory
+from tc_datasynth.core.llm.prompt_factory import get_prompt_manager
 from tc_datasynth.core.llm.structured_chain import StructuredChain
-from tc_datasynth.core.llm.llm_factory import get_llm_factory
+from tc_datasynth.core.llm.llm_factory import get_llm_manager
 from tc_datasynth.utilities.tiny_tool import format_dict
 
 """
@@ -53,8 +53,8 @@ class StructuredChainUnitTest(unittest.TestCase):
 class StructuredChainIntegrationTest(unittest.TestCase):
     """StructuredChain 集成测试：提示词 + 解析链。"""
 
-    prompt_tempt = get_prompt_factory()["simple_qa"]
-    llm = get_llm_factory()["doubao-flash"]
+    prompt_tempt = get_prompt_manager()["simple_qa"]
+    llm = get_llm_manager()["doubao-flash"]
 
     def test_run_and_batch(self) -> None:
         """链路可使用提示词模板并解析结构化输出（mock LLM）。"""
@@ -69,12 +69,17 @@ class StructuredChainIntegrationTest(unittest.TestCase):
             llm=llm,
         )
 
-        result = chain.run({"text": "sample"})
+        result = chain.run({"text": "sample", "meta": "difficulty=easy"})
         self.assertIsNotNone(result)
         self.assertIn("parse", result)
         self.assertEqual(result["parse"]["answer"], "A")
 
-        batch_result = chain.batch([{"text": "a"}, {"text": "b"}])
+        batch_result = chain.batch(
+            [
+                {"text": "a", "meta": "difficulty=easy"},
+                {"text": "b", "meta": "difficulty=easy"},
+            ]
+        )
         self.assertEqual(len(batch_result), 2)
         self.assertEqual(batch_result[0].get("parse", {}).get("evidence"), "E")
 
@@ -86,19 +91,24 @@ class StructuredChainIntegrationTest(unittest.TestCase):
             prompt_template=self.prompt_tempt, data_model=DummyQA, llm=self.llm
         )
 
-        result = chain.run({"text": test_text})
+        result = chain.run({"text": test_text, "meta": "difficulty=easy"})
         self.assertIsNotNone(result)
         self.assertIn("parse", result)
         self.assertIn("question", result["parse"])
 
-        async_result = asyncio.run(chain.arun({"text": test_text}))
+        async_result = asyncio.run(chain.arun({"text": test_text, "meta": "difficulty=easy"}))
         pprint(f"结果<async_result>如下：\n{format_dict(async_result)}")
         self.assertIsNotNone(async_result)
         self.assertIn("parse", async_result)
         self.assertIn("question", async_result.get("parse", {}))
 
         batch_result = asyncio.run(
-            chain.abatch([{"text": test_text}, {"text": test_text}])
+            chain.abatch(
+                [
+                    {"text": test_text, "meta": "difficulty=easy"},
+                    {"text": test_text, "meta": "difficulty=easy"},
+                ]
+            )
         )
 
         pprint(f"结果<batch_result>如下：\n{format_dict(batch_result)}")

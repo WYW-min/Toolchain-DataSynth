@@ -5,7 +5,8 @@ API 入口：暴露 create_app 作为服务启动接口，当前为 W1 占位。
 """
 
 import argparse
-import sys
+
+from tc_datasynth.core.logging import configure_logger
 
 
 class APIApp:
@@ -52,18 +53,16 @@ class APIApp:
     def run(self, args: list[str] | None = None) -> int:
         """启动 API 服务。"""
         parsed = APIApp.parse_args(args)
+        log = configure_logger("INFO")
         try:
             import uvicorn
 
             app = self.create_app()
         except ImportError as e:
-            print(
-                "Error: API 依赖未安装，请执行: pip install fastapi uvicorn\n" f"{e}",
-                file=sys.stderr,
-            )
+            log.error(f"API dependencies missing: {e}")
             return 1
 
-        print(f"Starting API server at http://{parsed.host}:{parsed.port}")
+        log.info(f"Starting API server at http://{parsed.host}:{parsed.port}")
         uvicorn.run(app, host=parsed.host, port=parsed.port)
         return 0
 

@@ -7,5 +7,17 @@ from tc_datasynth.pipeline.enhance.mixin.batch import (
     LoopBatchMixin,
     MultiprocessBatchMixin,
 )
+from tc_datasynth.pipeline.enhance.mixin.preflight import (
+    PreflightCheckMixin,
+    PreflightCheckResult,
+    PreflightStage,
+)
 
-__all__ = ["BatchMixinBase", "LoopBatchMixin", "MultiprocessBatchMixin"]
+__all__ = [
+    "BatchMixinBase",
+    "LoopBatchMixin",
+    "MultiprocessBatchMixin",
+    "PreflightCheckMixin",
+    "PreflightCheckResult",
+    "PreflightStage",
+]

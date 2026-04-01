@@ -1,0 +1,28 @@
+services:
+  mineru-reference:
+    image: ${MINERU_IMAGE:-mineru:latest}
+    container_name: mineru-reference
+    stdin_open: true
+    tty: true
+    ipc: host
+    shm_size: "32gb"
+    working_dir: /workspace
+    command: ["/bin/bash", "-lc", "sleep infinity"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+# 用途说明：
+#
+# 1. 该 compose 文件当前只提供一份“参考部署壳”，不承诺与官方完整服务编排完全一致。
+# 2. 当前阶段仓库仅保留镜像名与运行资源建议，主项目不会自动拉起该服务。
+# 3. 若已准备好 `mineru:latest` 镜像，可执行：
+#
+#    docker compose -f docker/mineru-gpu/compose.yaml up -d
+#    docker compose -f docker/mineru-gpu/compose.yaml exec mineru-reference /bin/bash
+#
+# 4. 真正的主项目接入应通过外部 HTTP 服务，而不是依赖该 compose 文件的具体容器命令。

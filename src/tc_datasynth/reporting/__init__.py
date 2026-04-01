@@ -5,5 +5,13 @@ TODO(W2/W3): 补充报告聚合、可视化输出等实现。
 """
 
 from tc_datasynth.reporting.report_writer import write_run_report
+from tc_datasynth.reporting.manifest_writer import (
+    register_stage_manifest_entry,
+    write_stage_manifests,
+)
 
-__all__ = ["write_run_report"]
+__all__ = [
+    "register_stage_manifest_entry",
+    "write_run_report",
+    "write_stage_manifests",
+]

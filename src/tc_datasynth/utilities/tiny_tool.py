@@ -1,5 +1,6 @@
 import hashlib
 import json
+import orjson
 import yaml
 
 
@@ -16,6 +17,6 @@ def format_dict(d: dict, mode="json"):
     if mode not in ["json", "yaml"]:
         raise ValueError("mode must be 'json' or 'yaml'")
     if mode == "json":
-        return json.dumps(d, indent=4, ensure_ascii=False)
+        return orjson.dumps(d, option=orjson.OPT_INDENT_2).decode("utf-8")
     else:
         return yaml.dump(d, allow_unicode=True, sort_keys=False)

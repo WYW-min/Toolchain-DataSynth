@@ -23,10 +23,19 @@ class ProgressTracker:
         """创建进度追踪器。"""
         return cls(
             total_docs=total_docs,
-            total_progress=tqdm(total=total_docs * 2, desc="总体进度", unit="step", position=0),
+            total_progress=tqdm(total=total_docs, desc="总体进度", unit="step", position=0),
             parse_progress=tqdm(total=total_docs, desc="解析文档", unit="doc", position=1),
-            generate_progress=tqdm(total=total_docs, desc="生成问答", unit="doc", position=2),
+            generate_progress=tqdm(total=0, desc="生成问答", unit="qa", position=2),
         )
+
+    def add_generate_total(self, count: int) -> None:
+        """动态扩展生成阶段总量。"""
+        if count <= 0:
+            return
+        self.generate_progress.total = int(self.generate_progress.total or 0) + count
+        self.generate_progress.refresh()
+        self.total_progress.total = int(self.total_progress.total or 0) + count
+        self.total_progress.refresh()
 
     def update_parse(self, count: int = 1) -> None:
         """更新解析阶段进度。"""

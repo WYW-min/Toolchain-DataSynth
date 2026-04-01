@@ -5,10 +5,10 @@ CLI 封装：参数解析与配置构建。
 """
 
 import argparse
-import sys
 from pathlib import Path
 
 from tc_datasynth.core import RuntimeConfig
+from tc_datasynth.core.logging import configure_logger
 from tc_datasynth.service import DataSynthService, SynthesisRequest
 
 
@@ -25,16 +25,15 @@ class CLIApp:
         """运行 CLI 流程。"""
         args = CLIApp.parse_args(args)
         config = CLIApp.build_runtime_config(args)
+        log = configure_logger(config.log_level)
         if not config.input_dir.exists():
-            print(
-                f"Error: Input directory not found: {config.input_dir}", file=sys.stderr
-            )
+            log.error(f"Input directory not found: {config.input_dir}")
             return 1
 
         service = DataSynthService(config=config)
-        response = service.run(SynthesisRequest(limit=config.max_docs))
+        response = service.run(SynthesisRequest(doc_limit=config.doc_limit))
         if not response.success:
-            print(f"Error: {response.error}", file=sys.stderr)
+            log.error(f"Pipeline run failed: {response.error}")
             return 1
         return 0
 
@@ -44,6 +43,13 @@ class CLIApp:
         parser = argparse.ArgumentParser(
             prog=prog,
             description="TC-DataSynth CLI（W1 mock 流程）",
+        )
+        parser.add_argument(
+            "--mode",
+            type=str,
+            choices=["mock", "real"],
+            default=None,
+            help="运行模式：mock 或 real（可覆盖配置）",
         )
         parser.add_argument(
             "--input-dir",
@@ -57,12 +63,22 @@ class CLIApp:
             default=None,
             help="运行产物输出目录（可覆盖配置）",
         )
-        parser.add_argument("--config", type=Path, help="可选：通过 TOML 加载默认参数")
         parser.add_argument(
+            "-c", "--config", type=Path, help="可选：通过 TOML 加载默认参数"
+        )
+        parser.add_argument(
+            "--doc-limit",
             "--max-docs",
+            dest="doc_limit",
             type=int,
             default=None,
             help="限制处理的文档数量（可覆盖配置）",
+        )
+        parser.add_argument(
+            "--limit",
+            type=str,
+            default=None,
+            help="限制最终生成的最大 QA 数量（0/none=全量）",
         )
         parser.add_argument(
             "--log-level",
@@ -101,6 +117,15 @@ class CLIApp:
             default=None,
             help="LLM 模型名（可覆盖配置）",
         )
+        parser.add_argument(
+            "--generator-name",
+            "--generator-backend",
+            dest="generator_name",
+            type=str,
+            choices=["mock", "simple_qa", "concurrent_qa"],
+            default=None,
+            help="生成器实现名：mock、simple_qa 或 concurrent_qa（可覆盖配置）",
+        )
         return parser
 
     @staticmethod
@@ -119,7 +144,7 @@ class CLIApp:
                 input_dir=args.input_dir
                 or Path("/Data_two/wyw/data/TC-DATASYNTH/原始PDF"),
                 output_dir=args.output_dir or Path("./data/out"),
-                max_docs=args.max_docs,
+                doc_limit=args.doc_limit,
                 log_level=args.log_level or "INFO",
             )
         # 仅覆盖关键运行时参数
@@ -127,10 +152,16 @@ class CLIApp:
             config.input_dir = args.input_dir
         if args.output_dir:
             config.output_dir = args.output_dir
-        if args.max_docs is not None:
-            config.max_docs = args.max_docs
+        if args.doc_limit is not None:
+            config.doc_limit = args.doc_limit
+        if args.limit is not None:
+            config.limit = RuntimeConfig.normalize_batch_size(
+                args.limit, default=config.limit
+            )
         if args.log_level:
             config.log_level = args.log_level
+        if args.mode:
+            config.mode = args.mode
         if args.parse_batch_size is not None:
             config.parse_batch_size = RuntimeConfig.normalize_batch_size(
                 args.parse_batch_size, default=config.parse_batch_size
@@ -145,6 +176,12 @@ class CLIApp:
             config.llm_config_path = args.llm_config
         if args.llm_model:
             config.llm_model = args.llm_model
+            config.components.setdefault("generator", {})["llm_model"] = args.llm_model
+        if args.generator_name:
+            generator_overrides = {"name": args.generator_name}
+            if args.llm_model:
+                generator_overrides["llm_model"] = args.llm_model
+            config.components["generator"] = generator_overrides
         config.ensure_output_dir()
         return config
 

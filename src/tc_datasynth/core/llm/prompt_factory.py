@@ -6,12 +6,14 @@ from typing import Dict, Iterator, List, Optional, Tuple
 from collections.abc import MutableMapping
 
 from langchain_core.prompts import ChatPromptTemplate
+from loguru import logger
 
 
 class PromptFactory(MutableMapping[str, ChatPromptTemplate]):
     """提示词工厂，单例模式，实现标准字典接口。"""
 
     _instance: Optional["PromptFactory"] = None
+    _required_variables: tuple[str, ...] = ("schema_define", "meta", "text")
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -44,9 +46,10 @@ class PromptFactory(MutableMapping[str, ChatPromptTemplate]):
             raise FileNotFoundError(f"提示词目录不存在: {self._prompt_dir}")
 
         for suffix in self._suffixs:
-            self._paths.update(
-                {p.stem: p for p in self._prompt_dir.glob(f"*.{suffix}")}
-            )
+            for path in self._prompt_dir.glob(f"*.{suffix}"):
+                if not self._validate_prompt_file(path):
+                    continue
+                self._paths[path.stem] = path
 
     @staticmethod
     def _normalize_id(prompt_id: str) -> str:
@@ -67,11 +70,50 @@ class PromptFactory(MutableMapping[str, ChatPromptTemplate]):
     def _build_template(self, prompt_text: str) -> ChatPromptTemplate:
         """根据提示词文本构建 ChatPromptTemplate。"""
         blocks = self._parse_blocks(prompt_text)
-        return (
+        template = (
             ChatPromptTemplate.from_messages(blocks)
             if blocks
             else ChatPromptTemplate.from_template(prompt_text)
         )
+        self._validate_template_variables(template)
+        return template
+
+    def _validate_prompt_file(self, path: Path) -> bool:
+        """校验提示词文件是否具备必需占位符，缺失则跳过。"""
+        try:
+            template = self._build_template(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.warning(f"跳过提示词 '{path.name}': 模板解析失败: {exc}")
+            return False
+        missing = self._missing_required_variables(template)
+        if missing:
+            logger.warning(
+                f"跳过提示词 '{path.name}': 缺少必需占位符 {missing}, "
+                f"要求包含 {list(self._required_variables)}"
+            )
+            return False
+        return True
+
+    def _validate_template_variables(self, template: ChatPromptTemplate) -> None:
+        """校验模板是否包含必需占位符。"""
+        missing = self._missing_required_variables(template)
+        if missing:
+            raise ValueError(
+                "prompt_template 缺少必需输入变量 "
+                f"{missing}, 要求包含 {list(self._required_variables)}"
+            )
+
+    def _missing_required_variables(
+        self,
+        template: ChatPromptTemplate,
+    ) -> List[str]:
+        """返回模板缺失的必需占位符列表。"""
+        input_variables = set(template.input_variables)
+        return [
+            variable
+            for variable in self._required_variables
+            if variable not in input_variables
+        ]
 
     @staticmethod
     def _parse_blocks(prompt_text: str) -> List[Tuple[str, str]]:
@@ -159,19 +201,19 @@ class PromptFactory(MutableMapping[str, ChatPromptTemplate]):
 
 
 # 全局单例
-_prompt_factory: Optional[PromptFactory] = None
+prompt_manager: Optional[PromptFactory] = None
 
 
-def get_prompt_factory(
+def get_prompt_manager(
     prompt_dir: Path | str | None = None, suffixs: List[str] = ["txt", "md"]
 ) -> PromptFactory:
     """获取提示词工厂单例。"""
-    global _prompt_factory
-    if _prompt_factory is None:
-        _prompt_factory = PromptFactory(prompt_dir=prompt_dir, suffixs=suffixs)
-    return _prompt_factory
+    global prompt_manager
+    if prompt_manager is None:
+        prompt_manager = PromptFactory(prompt_dir=prompt_dir, suffixs=suffixs)
+    return prompt_manager
 
 
 def get_prompt(prompt_id: str) -> ChatPromptTemplate:
     """快捷方式：获取 ChatPromptTemplate。"""
-    return get_prompt_factory()[prompt_id]
+    return get_prompt_manager()[prompt_id]

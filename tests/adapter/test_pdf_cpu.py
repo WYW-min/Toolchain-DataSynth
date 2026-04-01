@@ -54,20 +54,22 @@ class PdfCpuAdapterTest(unittest.TestCase):
             adapter.md_parser = DummyMdParser()
 
             result = adapter.parse(doc, ctx)
+            expected_md5 = hashlib.md5("hello world".encode("utf-8")).hexdigest()
 
-            self.assertEqual(result.doc_id, "sample")
+            self.assertEqual(result.doc_id, expected_md5)
             self.assertEqual(result.adapter_name, "pdf_cpu")
             self.assertTrue(result.workdir.exists())
-            self.assertEqual(result.text_path, result.workdir / "sample.md")
+            self.assertEqual(result.workdir, ctx.workdir_for(subdir="parser"))
+            self.assertEqual(result.text_path, result.workdir / f"sample__{expected_md5[:8]}.md")
             self.assertTrue(result.text_path.exists())
             self.assertEqual(
                 result.text_path.read_text(encoding="utf-8"), "hello world"
             )
             self.assertEqual(result.metadata["src"], "unit")
-            self.assertEqual(
-                result.metadata["md5"],
-                hashlib.md5("hello world".encode("utf-8")).hexdigest(),
-            )
+            self.assertEqual(result.metadata["md5"], expected_md5)
+            self.assertEqual(result.metadata["parsed_text_md5"], expected_md5)
+            self.assertEqual(result.metadata["source_doc_name"], "sample")
+            self.assertEqual(result.metadata["source_file_name"], "sample.pdf")
 
     @unittest.skipUnless(MARKITDOWN_AVAILABLE, "markitdown 未安装")
     def test_parse_real_pdf_integration(self) -> None:
@@ -95,7 +97,10 @@ class PdfCpuAdapterTest(unittest.TestCase):
             self.assertTrue(result.text_path.exists())
             self.assertGreater(result.text_path.stat().st_size, 0)
             self.assertEqual(result.adapter_name, "pdf_cpu")
-            self.assertEqual(result.doc_id, fixture.stem)
+            self.assertEqual(result.workdir, ctx.workdir_for(subdir="parser"))
+            self.assertTrue(result.text_path.parent.samefile(result.workdir))
+            self.assertTrue(result.text_path.name.startswith(f"{fixture.stem}__"))
             self.assertEqual(result.table_files, [])
             self.assertEqual(result.image_files, [])
+            self.assertEqual(result.doc_id, result.metadata["md5"])
             self.assertEqual(len(result.metadata.get("md5", "")), 32)

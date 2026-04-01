@@ -1,0 +1,73 @@
+[runtime]
+# 真实 MinerU 服务 + 真实 LLM：并发 parser + 并发 generator
+input_dir = "./data/in/pdf"
+output_dir = "./data/out"
+mode = "real"       
+doc_limit = 1
+limit = 0
+parse_batch_size = 1        # 每轮给解析器的文档数
+generate_batch_size = 1     # 一轮生成阶段对应的parsed batch数
+
+seed = 7
+log_level = "INFO"
+logs_root_base = "logs"
+temp_root_base = "data/temp"
+llm_config_path = "configs/llm.toml"
+
+[spec]
+difficulty_profile = { easy = 0.3, medium = 0.5, hard = 0.2 }
+question_type_mix = { definition = 0.4, factual = 0.3, reasoning = 0.3 }
+min_evidence_len = 80
+
+[components.parser]
+name = "concurrent_unified"
+max_workers = 2
+
+[components.sampler]
+name = "greedy_addition"
+chunk_size = 800
+min_sentence_len = 10
+write_human_readable = true
+human_readable_max_files = 10
+paragraph_separators = ["\n\n"]
+separators = ["。", "！", "？", ".", "!", "?", ";", "；"]
+
+[components.planner]
+name = "simple"
+skip_below_evidence_ratio = 0.5
+
+
+[components.adapter.pdf]
+name = "pdf_gpu"
+server_url = "http://127.0.0.1:8000"
+timeout_seconds = 300
+poll_interval_seconds = 2.0
+
+[components.adapter.pdf.parse_options]
+backend = "hybrid-auto-engine"
+parse_method = "auto"
+formula_enable = true
+table_enable = true
+
+[components.adapter.docx]
+name = "mock_word"
+
+[components.gate]
+name = "simple_composite"
+validators = ["simple_schema", "evidence", "label"]
+stop_on_first_error = true
+
+[components.validator.evidence]
+min_evidence_len = 80
+
+[components.validator.label]
+reasoning_min_evidence_len = 80
+
+[components.generator]
+name = "concurrent_qa"
+llm_model = "doubao-flash"
+prompt_id = "simple_qa"
+questions_per_chunk = 1
+batch_size = 4
+max_retries = 2
+retry_backoff_ms = 500

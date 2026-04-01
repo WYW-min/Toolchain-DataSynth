@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-门禁接口定义。
+原子校验器接口定义。
 """
 
 from abc import ABC, abstractmethod
@@ -9,12 +9,13 @@ from dataclasses import dataclass
 from typing import Generic, Iterable, List, Optional, TypeVar
 
 from tc_datasynth.core.models import QAPair, ValidationResult
+from tc_datasynth.core.registrable import RegistrableComponent
 from tc_datasynth.pipeline.enhance.mixin.batch import LoopBatchMixin
 
 
 @dataclass(slots=True)
 class ValidatorConfigBase:
-    """门禁基础配置。"""
+    """校验器基础配置。"""
 
     pass
 
@@ -22,10 +23,11 @@ class ValidatorConfigBase:
 TValidatorConfig = TypeVar("TValidatorConfig", bound=ValidatorConfigBase)
 
 
-class QualityGateBase(
+class ValidatorBase(
+    RegistrableComponent,
     LoopBatchMixin[QAPair, ValidationResult], ABC, Generic[TValidatorConfig]
 ):
-    """门禁接口。"""
+    """原子校验器接口。"""
 
     config: TValidatorConfig
     single_method_name: str = "validate"

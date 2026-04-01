@@ -1,6 +1,6 @@
 [project]
 authors = [{name = "王逸伟1", email = "1206182848@qq.com"}]
-dependencies = ["loguru>=0.7.3,<0.8", "pydantic>=2.11,<3", "tqdm>=4.67.1,<5", "markitdown[pdf,docx,pptx]>=0.1.4,<0.2", "json-repair>=0.55.0,<0.56"]
+dependencies = ["loguru>=0.7.3,<0.8", "pydantic>=2.11,<3", "tqdm>=4.67.1,<5", "markitdown[pdf,docx,pptx]>=0.1.4,<0.2", "json-repair>=0.55.0,<0.56", "python-dotenv>=1.1.1,<2", "mineru>=3.0.1,<4"]
 name = "TC-DataSynth"
 requires-python = ">= 3.11"
 version = "0.1.0"
@@ -18,6 +18,13 @@ test-smoke = "python -m unittest -v tests.test_smoke_mock"
 main = "python -m tc_datasynth.main"
 local = "python -m tc_datasynth.main local"
 server = "python -m tc_datasynth.main server"
+comp = "python -m tc_datasynth.main components"
+preflight = "python -m tc_datasynth.main preflight"
+compare-runs = "python -m tc_datasynth.tools.compare_runs"
+w2-demo = "bash ./scripts/run_w2_demo.sh"
+
+# 走真实的pdfs pixi run local --mode real --generator-backend mock --input-dir /path/to/pdfs
+# 走完整链路：pixi run local --mode real --generator-backend simple_qa --llm-config configs/llm.toml --llm-model doubao-flash --input-dir /path/to/pdfs
 
 
 test-local = "pixi run local --max-docs 1 --output-dir ./data/out/mock-run"
@@ -46,7 +53,7 @@ tc_datasynth = { path = ".", editable = true }
 python = "3.13.*"
 tqdm = ">=4.67.1,<5"
 loguru = ">=0.7.3,<0.8"
-pydantic = "2.11.*"
+pydantic = ">=2.12.5,<3"
 langchain = ">=1.2.6,<2"
 langchain-openai = ">=1.1.7,<2"
 

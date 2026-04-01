@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import tomllib
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -21,18 +21,20 @@ class RuntimeConfig(BaseModel):
     input_dir: Path = Field(..., description="PDF 输入目录")
     output_dir: Path = Field(..., description="运行产物输出目录")
     mode: str = Field(default="mock", description="运行模式，预留后续扩展")
-    max_docs: Optional[int] = Field(default=None, description="限制处理的文档数量")
+    doc_limit: Optional[int] = Field(default=None, description="限制处理的文档数量")
+    limit: Optional[int] = Field(
+        default=None,
+        description="限制最终生成的最大 QA 数量，None/0 表示全量",
+    )
     parse_batch_size: Optional[int] = Field(
         default=1, description="解析批处理数量（1=流式，None=全量）"
     )
     generate_batch_size: Optional[int] = Field(
         default=1, description="生成批处理数量（1=流式，None=全量）"
     )
-    mock_questions_per_doc: int = Field(
-        default=3, description="mock 模式每个文档生成的 QA 数量"
-    )
     seed: int = Field(default=7, description="随机种子")
     log_level: str = Field(default="INFO", description="日志级别")
+    logs_root_base: Path = Field(default=Path("logs"), description="日志输出根目录")
     temp_root_base: Path = Field(
         default=Path("data/temp"), description="临时工作目录根路径"
     )
@@ -41,6 +43,10 @@ class RuntimeConfig(BaseModel):
     )
     llm_model: str = Field(default="doubao_flash", description="默认使用的 LLM 模型名")
     spec: SpecConfig = Field(default_factory=SpecConfig, description="用户配置的 Spec")
+    components: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="组件级原始配置，如 sampler/planner/gate 的实现选择与参数",
+    )
 
     @staticmethod
     def normalize_batch_size(
@@ -71,24 +77,32 @@ class RuntimeConfig(BaseModel):
         raw = tomllib.loads(path.read_text())
         runtime = raw.get("runtime", {})
         spec_raw = raw.get("spec", {})
+        components_raw = raw.get("components", {})
+        doc_limit = runtime.get("doc_limit", runtime.get("max_docs"))
         return cls(
             input_dir=Path(runtime.get("input_dir", ".")),
             output_dir=Path(runtime.get("output_dir", "outputs")),
             mode=runtime.get("mode", "mock"),
-            max_docs=runtime.get("max_docs"),
+            doc_limit=doc_limit,
+            limit=cls.normalize_batch_size(runtime.get("limit"), default=None),
             parse_batch_size=cls.normalize_batch_size(
                 runtime.get("parse_batch_size", 1), default=1
             ),
             generate_batch_size=cls.normalize_batch_size(
                 runtime.get("generate_batch_size", 1), default=1
             ),
-            mock_questions_per_doc=runtime.get("mock_questions_per_doc", 3),
             seed=runtime.get("seed", 7),
             log_level=runtime.get("log_level", "INFO"),
+            logs_root_base=Path(runtime.get("logs_root_base", "logs")),
             temp_root_base=Path(runtime.get("temp_root_base", "data/temp")),
             llm_config_path=Path(runtime.get("llm_config_path", "configs/llm.toml")),
             llm_model=runtime.get("llm_model", "gpt_medium"),
             spec=SpecConfig.model_validate(spec_raw) if spec_raw else SpecConfig(),
+            components={
+                str(key): value
+                for key, value in components_raw.items()
+                if isinstance(value, dict)
+            },
         )
 
     def ensure_output_dir(self) -> Path:

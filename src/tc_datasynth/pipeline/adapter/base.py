@@ -10,6 +10,7 @@ from typing import Generic, Optional, TypeVar
 
 from tc_datasynth.core.context import RunContext
 from tc_datasynth.core.models import SourceDocument
+from tc_datasynth.core.registrable import RegistrableComponent
 from tc_datasynth.pipeline.adapter.types import AdapterResult
 
 
@@ -17,13 +18,13 @@ from tc_datasynth.pipeline.adapter.types import AdapterResult
 class AdapterConfigBase:
     """适配器基础配置。"""
 
-    output_subdir: str = "adapter"
+    output_subdir: str = "parser"
 
 
 TAdapterConfig = TypeVar("TAdapterConfig", bound=AdapterConfigBase)
 
 
-class DocumentAdapter(ABC, Generic[TAdapterConfig]):
+class DocumentAdapter(RegistrableComponent, ABC, Generic[TAdapterConfig]):
     """解析/适配接口，负责从输入文档生成 AdapterResult。"""
 
     config: TAdapterConfig
