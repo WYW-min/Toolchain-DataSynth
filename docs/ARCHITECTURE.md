@@ -6,13 +6,38 @@
 - **Spec -> Plan**：用户配置（目标、约束）先被编译为执行计划；核心框架只感知 Plan，便于后续插拔。
 - **组件可替换**：解析、采样、生成、门禁、报告均以接口形式存在，可按阶段逐步替换 mock/真实实现。
 
+## RunContext 与临时目录
+- **RunContext**：一次运行的统一上下文，集中持有 `run_id`、`temp_root`、`RuntimeConfig`、`Spec`、`Plan`、`logger` 等公共状态。
+- **temp_root**：本次运行的中间结果根目录，默认是 `data/temp/<run_id>`。
+- **共享方式**：各流水线组件通过依赖注入共享同一个 `RunContext`，需要写中间产物时再通过 `workdir_for(...)` 获取各自子目录。
+- **作用**：
+  - 统一 run 级路径和日志
+  - 给 parser / sampler / planner / generator / gate 提供一致的中间结果落盘位置
+  - 避免各组件自行拼接路径，降低运行时状态分散
+
+## Spec -> Plan 的设计意图
+- **Spec** 表示“用户想要什么”，例如：
+  - 难度分布
+  - 题型分布
+  - `min_evidence_len`
+- **Plan** 表示“系统准备怎么做”，是运行前编译出的执行计划。
+- 这层拆分的目的不是为了抽象而抽象，而是为了把：
+  - 用户目标
+  - 执行策略
+  分开。
+- 这样后面替换 `sampler / planner / generator / gate` 时，组件只需要消费统一的 `Plan`，而不直接依赖原始配置文件细节。
+- 当前仓库里这层已经成立：
+  - `SpecConfig` 负责描述目标
+  - `PlanConfig` 负责描述执行计划
+  - `RunContext.plan` 作为流水线组件共享输入
+
 ## 流水线阶段（与代码对应）
 1) **Document Reader (`io/reader.py`)**  
    - 负责枚举输入文件，产生 `SourceDocument`。
 2) **Parser (`pipeline/parser/`)**  
-   - 将原始文件转为统一的 `IntermediateRepresentation`；W1 为 mock，后续接入 PDF/Word 解析器。
+   - 将原始文件转为统一的 `IntermediateRepresentation`；当前已支持 `simple_unified` 与 `concurrent_unified`。
 3) **Sampler (`pipeline/sampler/`)**  
-   - 基于 IR 切分出 `DocumentChunk`；W2 会补充章节/语义切分。
+   - 基于 IR 切分出 `DocumentChunk`；当前已支持简单切块与贪心切块。
 
 ## 结构层次约定
 - **物理段落 / block**：版面与解析层的文本分块，回答“文本在版面上怎么被切开”。
@@ -29,14 +54,17 @@
 - **建议方向**：未来可为 IR 增加 `blocks` 或 `segments` 字段，每个元素至少包含 `text`、`section`、`order`，必要时再扩展 `heading`、`page` 等信息。
 
 
-4) **Generator (`pipeline/generator/`)**  
-   - 生成 `QAPair`；当前 mock，后续对接 LLM + Prompt 管理。
-5) **Quality Gates (`pipeline/validator/`)**  
-   - 链式校验，阻塞或告警；W3 将扩展格式/敏感词/启发式规则。
-6) **Writer (`io/writer.py`)**  
-   - 将通过/失败的数据分别落盘；报告由 `runner` 写入。
+4) **Planner (`pipeline/planner/`)**
+   - 基于 `Plan` 为 chunk 分配轻量“出题大纲”，区分 `system_meta` 与 `prompt_meta`。
+5) **Generator (`pipeline/generator/`)**  
+   - 生成 `QAPair`；当前已支持 `mock`、`simple_qa`、`concurrent_qa`。
+6) **Quality Gates (`pipeline/validator/` + `pipeline/gate/`)**  
+   - validator 负责检查，gate 负责聚合并做 `pass/reject` 裁决。
+7) **Writer / Reporting (`io/writer.py` + `reporting/`)**  
+   - 将通过/失败的数据分别落盘，并写出 `report.json` 与各阶段 manifest。
 
 ## 运行模式
-- **W1 Mock 模式**：不触碰 PDF 内容，利用文件名生成稳定的 mock 数据，用于验证 CLI 和数据结构。
-- **Spec -> Plan**：`spec` 中描述难度/题型比例与最小证据长度，`plan` 编译后被生成器读取。
-- **后续计划**：新增 `RealPdfParser`、`SemanticSampler`、`LLMQAGenerator` 等实现并替换当前注入的组件。
+- **Mock 模式**：不依赖 MinerU 和真实 LLM，用于验证仓库本体与编排流程。
+- **W2 默认真实模式**：`pdf_gpu + simple_unified + concurrent_qa`，通过 `configs/w2_demo.toml` 运行。
+- **Spec -> Plan**：`spec` 中描述难度/题型比例与最小证据长度，`plan` 编译后由 planner / generator 消费。
+- **后续计划**：继续提升 evidence 质量、失败回流、以及更大规模批处理下的 parser 策略。

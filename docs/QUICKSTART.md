@@ -34,7 +34,7 @@ pixi run preflight --config configs/w2_demo.toml
 pixi run w2-demo
 ```
 
-但这 4 条命令能成功的前提是：
+但这 3 个前提必须成立：
 
 1. MinerU HTTP 服务已经启动，并且 `http://127.0.0.1:8000/health` 可访问
 2. `configs/llm_manager.env` 里已经填了真实 `BASEURL / API KEY`
@@ -113,7 +113,7 @@ pixi run w2-demo
 
 默认演示配置是：
 
-- [`configs/w2_demo.toml`](/Data_two/wyw/code/TC-DataSynth/configs/w2_demo.toml)
+- [`configs/w2_demo.toml`](../configs/w2_demo.toml)
 
 这份配置默认使用：
 
@@ -141,7 +141,7 @@ pixi run w2-demo --help
 
 默认配置里，MinerU 服务地址写在：
 
-- [`configs/w2_demo.toml`](/Data_two/wyw/code/TC-DataSynth/configs/w2_demo.toml)
+- [`configs/w2_demo.toml`](../configs/w2_demo.toml)
 
 对应字段：
 
@@ -169,7 +169,7 @@ bash mineru_api_start.sh --host 127.0.0.1 --port 8000 --cuda-devices 0
 说明：
 
 - 这个脚本在本仓库里提供参考版本：
-  - [`scripts/mineru_api_start.sh`](/Data_two/wyw/code/TC-DataSynth/scripts/mineru_api_start.sh)
+  - [`scripts/mineru_api_start.sh`](../scripts/mineru_api_start.sh)
 - 需要复制到 MinerU 仓库根目录下执行
 
 ### 6.2 服务自检
@@ -192,11 +192,11 @@ bash scripts/mineru_api_parse.sh \
 
 LLM 配置入口：
 
-- [`configs/llm.toml`](/Data_two/wyw/code/TC-DataSynth/configs/llm.toml)
+- [`configs/llm.toml`](../configs/llm.toml)
 
 环境变量模板：
 
-- [`configs/llm_manager.env.example`](/Data_two/wyw/code/TC-DataSynth/configs/llm_manager.env.example)
+- [`configs/llm_manager.env.example`](../configs/llm_manager.env.example)
 
 当前仓库里**只有模板文件**，不会提交真实密钥文件。首次使用前先执行：
 
@@ -231,7 +231,7 @@ cp configs/llm_manager.env.example configs/llm_manager.env
 
 默认演示配置里，生成器模型写在：
 
-- [`configs/w2_demo.toml`](/Data_two/wyw/code/TC-DataSynth/configs/w2_demo.toml)
+- [`configs/w2_demo.toml`](../configs/w2_demo.toml)
 
 对应字段：
 
@@ -284,7 +284,7 @@ input_dir = "./data/in/pdf_demo"
 
 修改：
 
-- [`configs/w2_demo.toml`](/Data_two/wyw/code/TC-DataSynth/configs/w2_demo.toml)
+- [`configs/w2_demo.toml`](../configs/w2_demo.toml)
 
 把：
 
@@ -352,7 +352,7 @@ pixi run w2-demo --skip-preflight
 
 ## 12. 最常改的配置项
 
-最常改的是 [`configs/w2_demo.toml`](/Data_two/wyw/code/TC-DataSynth/configs/w2_demo.toml) 里的这几项：
+最常改的是 [`configs/w2_demo.toml`](../configs/w2_demo.toml) 里的这几项：
 
 ```toml
 [runtime]
@@ -390,3 +390,7 @@ prompt_id = "simple_qa"
 3. `data/out/<run_id>/report.json`
 4. `data/out/<run_id>/FailedCases.jsonl`
 5. `data/temp/<run_id>`
+
+
+## 14. 开发规范见 
+[开发规范文档](CONTRIBUTING.md)

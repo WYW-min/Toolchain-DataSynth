@@ -13,6 +13,14 @@
 
 ## 当前默认入口
 
+接手第一步建议先跑仓库自检：
+
+```bash
+pixi run local --config configs/mock.toml
+```
+
+mock 跑通后，再进入真实链路。
+
 首次使用前，先准备 LLM 环境变量文件：
 
 ```bash
